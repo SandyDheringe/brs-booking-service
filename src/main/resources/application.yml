@@ -1,0 +1,8 @@
+
+spring:
+  application:
+    name: brs-booking-service
+  profiles:
+    active: dev
+  config:
+    import: configserver:http://localhost:8071
