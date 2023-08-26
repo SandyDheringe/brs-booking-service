@@ -5,6 +5,7 @@ import com.brsbooking.exception.BRSResourceNotFoundException;
 import com.brsbooking.search.BusRoute;
 import com.brsbooking.search.BusRouteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jms.annotation.JmsListener;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -102,5 +103,12 @@ public class BookingService {
             throw new BRSResourceNotFoundException(String.format("Booking details with id %d not found", bookingId));
         }
 
+    }
+
+    @JmsListener(destination = "brsqueue")
+    public void receiveMessage(String message) {
+        Booking bookingDetail = bookingRepository.findById(1).orElse(null);
+        bookingDetail.setBookingStatus(BookingStatus.CONFIRMED);
+        bookingRepository.saveAndFlush(bookingDetail);
     }
 }
