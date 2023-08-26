@@ -8,12 +8,12 @@ import java.util.List;
 public class SearchService {
 
 
-    private final RouteRepository routeRepository;
+    private final BusRouteRepository busRouteRepository;
 
-    SearchService(RouteRepository routeRepository){
-        this.routeRepository = routeRepository;
+    SearchService(BusRouteRepository busRouteRepository){
+        this.busRouteRepository = busRouteRepository;
     }
-    public List<Route> searchBus(String source, String destination) {
-        return routeRepository.findAllBySourceAndDestination(source,destination);
+    public List<BusRoute> searchBus(String source, String destination) {
+        return busRouteRepository.findAllBySourceAndDestination(source,destination);
     }
 }

@@ -23,12 +23,14 @@ public class SearchController {
     }
 
     @GetMapping("/bus/search")
-    ResponseEntity<List<Route>> searchBus(
+    ResponseEntity<List<BusRoute>> searchBus(
             @RequestParam String source,
             @RequestParam String destination
     )
     {
-        List<Route> routes = searchService.searchBus(source, destination);
-        return ResponseEntity.status(HttpStatus.CREATED).body(routes);
+        List<BusRoute> busRoutes = searchService.searchBus(source, destination);
+        return ResponseEntity.status(HttpStatus.OK).body(busRoutes);
     }
+
+
 }
