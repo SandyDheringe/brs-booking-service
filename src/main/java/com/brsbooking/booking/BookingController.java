@@ -22,10 +22,8 @@ public class BookingController {
     }
 
     @PostMapping("/bookings")
-    public ResponseEntity doBusBooking(@RequestBody BookingRequestDto bookingRequestDto,
-                                       @RequestHeader("Authorization") String authorizationHeader) {
-        bookingService.doBusBooking(bookingRequestDto,authorizationHeader);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<BookingResponseDto> doBusBooking(@RequestBody BookingRequestDto bookingRequestDto) {
+        return ResponseEntity.ok().body(bookingService.doBusBooking(bookingRequestDto));
     }
 
     @GetMapping("/bookings/{booking_id}")

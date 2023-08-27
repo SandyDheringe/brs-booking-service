@@ -1,14 +1,17 @@
 package com.brsbooking.booking;
 
-import com.brsbooking.config.UserDetailConfig;
 import com.brsbooking.exception.BRSException;
+import com.brsbooking.exception.BRSFieldException;
 import com.brsbooking.exception.BRSResourceNotFoundException;
+import com.brsbooking.messages.BookingMessage;
+import com.brsbooking.messages.BusBookingMessage;
+import com.brsbooking.messages.MessageBroker;
+import com.brsbooking.messages.MessageDestinationConst;
 import com.brsbooking.search.BusRoute;
 import com.brsbooking.search.BusRouteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.annotation.JmsListener;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -32,23 +35,16 @@ public class BookingService {
 
     private final PassengerRepository passengerRepository;
 
-    private final JmsTemplate jmsTemplate;
+    private final MessageBroker messageBroker;
 
-    private final UserDetailConfig userDetailConfig;
-
-    private final CustomerRepository customerRepository;
     @Autowired
     BookingService(WebClient.Builder webClientBuilder, BookingRepository bookingRepository,
-                   BusRouteRepository busRouteRepository, PassengerRepository passengerRepository,
-                   JmsTemplate jmsTemplate, UserDetailConfig userDetailConfig,
-                   CustomerRepository customerRepository) {
+                   BusRouteRepository busRouteRepository, PassengerRepository passengerRepository, MessageBroker messageBroker) {
         this.webClientBuilder = webClientBuilder;
         this.bookingRepository = bookingRepository;
         this.busRouteRepository = busRouteRepository;
         this.passengerRepository = passengerRepository;
-        this.jmsTemplate = jmsTemplate;
-        this.userDetailConfig = userDetailConfig;
-        this.customerRepository = customerRepository;
+        this.messageBroker = messageBroker;
     }
 
     public Mono<BusInventoryDto> fetchBusInventory(Integer busId) {
@@ -61,51 +57,41 @@ public class BookingService {
                 .bodyToMono(BusInventoryDto.class);
     }
 
-
-    public void doBusBooking(BookingRequestDto bookingRequestDto, String authorizationHeader) {
+    public BookingResponseDto doBusBooking(BookingRequestDto bookingRequestDto) {
 
         Optional<BusInventoryDto> busInventoryDto = fetchBusInventory(bookingRequestDto.getBusId()).blockOptional();
-
-        Customer customer = customerRepository.findByUserName(userDetailConfig.getUserInfo(authorizationHeader).getUsername()).orElse(null);
-
-        if(customer == null){
-            throw new BRSException("Customer not found");
-        }
 
         if (busInventoryDto.isPresent()) {
             BusInventoryDto busInventoryDetail = busInventoryDto.get();
             BusRoute busRoute = busRouteRepository.findById(bookingRequestDto.getBusId()).orElse(null);
-            if(busRoute == null){
-                throw new BRSException("Something went wrong");
+            if (busRoute == null) {
+                throw new BRSException("BusRoute detail not found");
             }
             List<Passenger> passengers = bookingRequestDto.getPassengerDetails();
 
             if (busInventoryDetail.getAvailableSeats() >= passengers.size()) {
                 Booking booking = new Booking();
                 booking.setBusId(bookingRequestDto.getBusId());
-                booking.setCustomerId(customer.getId());
+                booking.setCustomerId(bookingRequestDto.getCustomerId());
                 booking.setBookingDate(bookingRequestDto.getBookingDate());
                 booking.setNoOfSeats(passengers.size());
                 booking.setBookingStatus(BookingStatus.PENDING);
-                booking.setTotalAmount(busRoute.getFareAmount()*booking.getNoOfSeats());
+                booking.setTotalAmount(busRoute.getFareAmount() * booking.getNoOfSeats());
                 passengers.forEach(passenger -> passenger.setBooking(booking));
                 bookingRequestDto.setPassengerDetails(passengers);
                 booking.setPassengers(passengers);
-                Booking result = bookingRepository.saveAndFlush(booking);
-                sendMessage("brsqueue","booking id="+result.getId());
+                Booking newBooking = bookingRepository.saveAndFlush(booking);
+                messageBroker.sendBookingMessage(MessageDestinationConst.DEST_PROCESS_PAYMENT, new BookingMessage(newBooking.getId()));
+                return new BookingResponseDto(BookingStatus.PENDING,newBooking.getId(),newBooking.getTotalAmount());
+            }
+            else {
+                throw new BRSFieldException("Insufficient seats");
             }
         } else {
-            throw new BRSException("Something went wrong");
+            throw new BRSException("Could not retrieve bus inventory");
         }
     }
 
-    public void sendMessage(String destination, String message) {
-        jmsTemplate.send(destination, session -> {
-            javax.jms.Message jmsMessage = session.createTextMessage(message);
-            return jmsMessage;
-        });
-        System.out.println("Sent message: " + message);
-    }
 
     public Optional<Booking> getBooking(Integer bookingId) {
         return bookingRepository.findById(bookingId);
@@ -117,19 +103,18 @@ public class BookingService {
 
     public void cancelBooking(Integer bookingId) {
         Optional<Booking> bookingDetail = bookingRepository.findById(bookingId);
-        if(bookingDetail.isPresent()){
-            Booking booking =bookingDetail.get();
+        if (bookingDetail.isPresent()) {
+            Booking booking = bookingDetail.get();
             booking.setBookingStatus(BookingStatus.CANCEL);
-        }
-        else{
+        } else {
             throw new BRSResourceNotFoundException(String.format("Booking details with id %d not found", bookingId));
         }
 
     }
 
-    @JmsListener(destination = "brsqueue")
-    public void receiveMessage(String message) {
-        Booking bookingDetail = bookingRepository.findById(1).orElse(null);
+    @JmsListener(destination = MessageDestinationConst.DEST_UPDATE_BOOKING)
+    public void receiveMessage(BusBookingMessage busBookingMessage) {
+        Booking bookingDetail = bookingRepository.findById(busBookingMessage.getBookingId()).orElse(null);
         bookingDetail.setBookingStatus(BookingStatus.CONFIRMED);
         bookingRepository.saveAndFlush(bookingDetail);
     }

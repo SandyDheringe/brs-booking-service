@@ -27,6 +27,13 @@ public class GlobalExceptionHandler {
         return new BRSError(BRSErrorType.SERVER_ERROR, ex.getMessage(), LocalDateTime.now(), null);
     }
 
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    @ResponseBody
+    @ExceptionHandler(BRSFieldException.class)
+    public BRSError handleBRSFieldException(BRSFieldException ex) {
+        return new BRSError(BRSErrorType.FIELD_ERROR, ex.getMessage(), LocalDateTime.now(), null);
+    }
+
 //    @ExceptionHandler(Exception.class)
 //    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
 //        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "An error occurred");
