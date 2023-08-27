@@ -6,3 +6,10 @@ spring:
     active: dev
   config:
     import: configserver:http://localhost:8071
+
+
+endpoint:
+  inventory:
+    host: http://BRS-INVENTORY-SERVICE/inventory
+    getInventories: /api/v1/buses/{bus_id}/inventories
+

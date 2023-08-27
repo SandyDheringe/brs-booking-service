@@ -20,6 +20,12 @@ public class Booking {
     @Column(name = "booking_id", nullable = false)
     private Integer id;
 
+    @Column(name = "bus_id", nullable = false)
+    private Integer busId;
+
+    @Column(name = "customer_id", nullable = false)
+    private Integer customerId;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     @Column(name = "booking_date")
     private LocalDateTime bookingDate;

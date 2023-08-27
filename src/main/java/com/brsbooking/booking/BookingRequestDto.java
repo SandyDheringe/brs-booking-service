@@ -17,7 +17,6 @@ public class BookingRequestDto {
     private List<Passenger> passengerDetails;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-    @Column(name = "booking_date")
     private LocalDateTime bookingDate;
 
 }
