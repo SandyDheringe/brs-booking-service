@@ -22,13 +22,11 @@ public class MessageBroker {
     }
 
     public void sendBookingMessage(String destination, BookingMessage bookingMessage) {
-
         Map<String, Object> object = objectMapper
                 .convertValue(bookingMessage, new TypeReference<>() {
                 });
 
         System.out.println("Sent message: " + object);
         jmsTemplate.convertAndSend(destination, object);
-
     }
 }

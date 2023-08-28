@@ -106,14 +106,15 @@ public class BookingService {
     }
 
     public void cancelBooking(Integer bookingId) {
-        Optional<Booking> bookingDetail = bookingRepository.findById(bookingId);
+        Optional<Booking> bookingDetail = bookingRepository.findByIdAndBookingStatus(bookingId, BookingStatus.CONFIRMED);
         if (bookingDetail.isPresent()) {
             Booking booking = bookingDetail.get();
             booking.setBookingStatus(BookingStatus.CANCEL);
+            bookingRepository.saveAndFlush(booking);
+            messageBroker.sendBookingMessage(MessageDestinationConst.DEST_INITIATE_PAYMENT_REFUND,new BookingMessage(bookingId,null));
         } else {
-            throw new BRSResourceNotFoundException(String.format("Booking details with id %d not found", bookingId));
+            throw new BRSResourceNotFoundException(String.format("No Confirm Booking details with id %d found", bookingId));
         }
-
     }
 
     @JmsListener(destination = MessageDestinationConst.DEST_UPDATE_BOOKING)
