@@ -32,6 +32,7 @@ public class Passenger {
     @Column(name = "state", length = 100)
     private String state;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "booking_id")
     private Booking booking;

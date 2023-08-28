@@ -9,4 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class BookingMessage {
     private Integer bookingId;
+    private Float bookingAmount;
 }

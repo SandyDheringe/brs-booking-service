@@ -9,6 +9,7 @@ import com.brsbooking.messages.MessageBroker;
 import com.brsbooking.messages.MessageDestinationConst;
 import com.brsbooking.search.BusRoute;
 import com.brsbooking.search.BusRouteRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.annotation.JmsListener;
@@ -17,6 +18,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -37,14 +39,17 @@ public class BookingService {
 
     private final MessageBroker messageBroker;
 
+    private final ObjectMapper objectMapper;
+
     @Autowired
     BookingService(WebClient.Builder webClientBuilder, BookingRepository bookingRepository,
-                   BusRouteRepository busRouteRepository, PassengerRepository passengerRepository, MessageBroker messageBroker) {
+                   BusRouteRepository busRouteRepository, PassengerRepository passengerRepository, MessageBroker messageBroker, ObjectMapper objectMapper) {
         this.webClientBuilder = webClientBuilder;
         this.bookingRepository = bookingRepository;
         this.busRouteRepository = busRouteRepository;
         this.passengerRepository = passengerRepository;
         this.messageBroker = messageBroker;
+        this.objectMapper = objectMapper;
     }
 
     public Mono<BusInventoryDto> fetchBusInventory(Integer busId) {
@@ -81,10 +86,9 @@ public class BookingService {
                 bookingRequestDto.setPassengerDetails(passengers);
                 booking.setPassengers(passengers);
                 Booking newBooking = bookingRepository.saveAndFlush(booking);
-                messageBroker.sendBookingMessage(MessageDestinationConst.DEST_PROCESS_PAYMENT, new BookingMessage(newBooking.getId()));
-                return new BookingResponseDto(BookingStatus.PENDING,newBooking.getId(),newBooking.getTotalAmount());
-            }
-            else {
+                messageBroker.sendBookingMessage(MessageDestinationConst.DEST_PROCESS_PAYMENT, new BookingMessage(newBooking.getId(), newBooking.getTotalAmount()));
+                return new BookingResponseDto(BookingStatus.PENDING, newBooking.getId(), newBooking.getTotalAmount());
+            } else {
                 throw new BRSFieldException("Insufficient seats");
             }
         } else {
@@ -113,7 +117,9 @@ public class BookingService {
     }
 
     @JmsListener(destination = MessageDestinationConst.DEST_UPDATE_BOOKING)
-    public void receiveMessage(BusBookingMessage busBookingMessage) {
+    public void receiveMessage(Map<String, Object> object) {
+        final BusBookingMessage busBookingMessage = objectMapper.convertValue(object, BusBookingMessage.class);
+        System.out.println("Received message: " + busBookingMessage);
         Booking bookingDetail = bookingRepository.findById(busBookingMessage.getBookingId()).orElse(null);
         bookingDetail.setBookingStatus(BookingStatus.CONFIRMED);
         bookingRepository.saveAndFlush(bookingDetail);
