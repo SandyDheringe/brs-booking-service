@@ -101,8 +101,8 @@ public class BookingService {
         return bookingRepository.findById(bookingId);
     }
 
-    public List<Booking> getBookings() {
-        return bookingRepository.findAll();
+    public List<Booking> getBookings(Integer customerId) {
+        return bookingRepository.findAllByCustomerId(customerId);
     }
 
     public void cancelBooking(Integer bookingId) {

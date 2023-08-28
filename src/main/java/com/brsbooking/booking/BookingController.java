@@ -37,9 +37,9 @@ public class BookingController {
         }
     }
 
-    @GetMapping("/bookings")
-    public ResponseEntity<List<Booking>> getBookings() {
-        List<Booking> bookings = bookingService.getBookings();
+    @GetMapping("/bookings/customers/{customer_id}")
+    public ResponseEntity<List<Booking>> getBookings(@PathVariable("customer_id") Integer customerId) {
+        List<Booking> bookings = bookingService.getBookings(customerId);
         return ResponseEntity.status(HttpStatus.OK).body(bookings);
     }
 
