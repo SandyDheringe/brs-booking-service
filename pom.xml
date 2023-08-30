@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.brsbooking</groupId>
     <artifactId>brs-booking-service</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>brs-booking-service</name>
     <description>brs-booking-service</description>
     <properties>
