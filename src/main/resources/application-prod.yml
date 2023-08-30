@@ -1,0 +1,6 @@
+
+spring:
+  application:
+    name: brs-booking-service
+  config:
+    import: configserver:http://config-server:8071

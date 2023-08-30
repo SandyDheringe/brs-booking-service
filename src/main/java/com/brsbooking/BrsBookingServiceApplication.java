@@ -3,6 +3,7 @@ package com.brsbooking;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jms.DefaultJmsListenerContainerFactoryConfigurer;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
@@ -18,7 +19,12 @@ import javax.jms.ConnectionFactory;
 public class BrsBookingServiceApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(BrsBookingServiceApplication.class, args);
+//        SpringApplication.run(BrsBookingServiceApplication.class, args);
+
+        new SpringApplicationBuilder()
+                .profiles("dev")
+                .sources(BrsBookingServiceApplication.class)
+                .run(args);
     }
 
 }
