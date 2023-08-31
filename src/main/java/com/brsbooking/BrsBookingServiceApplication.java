@@ -22,7 +22,7 @@ public class BrsBookingServiceApplication {
 //        SpringApplication.run(BrsBookingServiceApplication.class, args);
 
         new SpringApplicationBuilder()
-                .profiles("dev")
+                .profiles("prod")
                 .sources(BrsBookingServiceApplication.class)
                 .run(args);
     }
